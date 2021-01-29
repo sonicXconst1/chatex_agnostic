@@ -7,3 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+sdk_rust = { git="https://github.com/sonicxconst1/sdk-rust.git", branch="master" }
+agnostic = { git="https://github.com/sonicxconst1/agnostic.git", branch="master" }
+hyper = { version = "0.*", features = ["client"] }
+log = { version = "0.*" }
