@@ -3,8 +3,9 @@
 [[package]]
 name = "agnostic"
 version = "0.1.0"
-source = "git+https://github.com/sonicxconst1/agnostic.git?branch=master#c2dc9eba91b045b940931f451f1e0a304aa50150"
+source = "git+https://github.com/sonicxconst1/agnostic.git?branch=master#958af7f8f71d2d1ab247369c65293052aeb49344"
 dependencies = [
+ "futures",
  "log",
 ]
 
@@ -62,7 +63,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "chatex-sdk-rust"
 version = "0.1.0"
-source = "git+https://github.com/sonicxconst1/sdk-rust.git?branch=main#c0c93a8bcfaa0a88610e3a1966d577d5c681fe01"
+source = "git+https://github.com/sonicxconst1/sdk-rust.git?branch=main#c0035791de34c7faf47df3256ee8283ca333cb80"
 dependencies = [
  "chrono",
  "futures",

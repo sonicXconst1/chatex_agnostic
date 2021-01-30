@@ -1,12 +1,73 @@
-pub struct ChatexSniffer {
+use std::str::FromStr;
+
+pub struct ChatexSniffer<TConnector> {
+    client: std::sync::Arc<chatex_sdk_rust::ChatexClient<TConnector>>,
 }
 
-impl agnostic::market::Sniffer for ChatexSniffer {
-    fn all_the_best_orders(&self, coins: agnostic::coin::CoinPair, count: u32) -> Vec<agnostic::order::Order> {
-        todo!()
+impl<TConnector> ChatexSniffer<TConnector>
+where
+    TConnector: hyper::client::connect::Connect + Send + Sync + Clone + 'static,
+{
+    pub fn new(client: std::sync::Arc<chatex_sdk_rust::ChatexClient<TConnector>>) -> Self {
+        ChatexSniffer { client }
+    }
+}
+
+impl<TConnector> agnostic::market::Sniffer for ChatexSniffer<TConnector>
+where
+    TConnector: hyper::client::connect::Connect + Send + Clone + Sync + 'static,
+{
+    fn all_the_best_orders(
+        &self,
+        coins: agnostic::coin::CoinPair,
+        count: u32,
+    ) -> agnostic::market::Future<Result<Vec<agnostic::order::Order>, String>> {
+        let exchange = self.client.exchange();
+        let future = async move {
+            let pair = chatex_sdk_rust::coin::CoinPair::new(
+                chatex_sdk_rust::coin::Coin::TON,
+                chatex_sdk_rust::coin::Coin::USDT,
+            );
+            match exchange.get_all_orders(pair, None, Some(count)).await {
+                Ok(orders) => Ok(orders
+                    .into_iter()
+                    .map(|order| agnostic::order::Order {
+                        coins: coins.clone(),
+                        price: f64::from_str(&order.rate).unwrap(),
+                        amount: f64::from_str(&order.amount).unwrap(),
+                    })
+                    .collect()),
+                Err(error) => Err(format!("{}", error)),
+            }
+        };
+        Box::pin(future)
     }
 
-    fn the_best_order(&self, coins: agnostic::coin::CoinPair) -> Option<agnostic::order::Order> {
-        todo!()
+    fn the_best_order(
+        &self,
+        coins: agnostic::coin::CoinPair,
+    ) -> agnostic::market::Future<Result<agnostic::order::Order, String>> {
+        let exchange = self.client.exchange();
+        let future = async move {
+            let pair = chatex_sdk_rust::coin::CoinPair::new(
+                chatex_sdk_rust::coin::Coin::TON,
+                chatex_sdk_rust::coin::Coin::USDT,
+            );
+            match exchange.get_all_orders(pair, None, Some(1)).await {
+                Ok(orders) => {
+                    let order = match orders.get(0) {
+                        Some(order) => order,
+                        None => return Err("0 orders from chatex API".to_owned()),
+                    };
+                    Ok(agnostic::order::Order {
+                        coins: coins.clone(),
+                        price: f64::from_str(&order.rate).unwrap(),
+                        amount: f64::from_str(&order.amount).unwrap(),
+                    })
+                }
+                Err(error) => Err(format!("{}", error)),
+            }
+        };
+        Box::pin(future)
     }
 }
