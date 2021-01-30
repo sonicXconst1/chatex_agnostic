@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use agnostic::coin::CoinConverter;
 
 pub struct ChatexSniffer<TConnector> {
     client: std::sync::Arc<chatex_sdk_rust::ChatexClient<TConnector>>,
@@ -9,7 +10,9 @@ where
     TConnector: hyper::client::connect::Connect + Send + Sync + Clone + 'static,
 {
     pub fn new(client: std::sync::Arc<chatex_sdk_rust::ChatexClient<TConnector>>) -> Self {
-        ChatexSniffer { client }
+        ChatexSniffer {
+            client,
+        }
     }
 }
 
@@ -24,9 +27,11 @@ where
     ) -> agnostic::market::Future<Result<Vec<agnostic::order::Order>, String>> {
         let exchange = self.client.exchange();
         let future = async move {
+            let converter = crate::CoinConverter { };
+            let pair = coins.clone();
             let pair = chatex_sdk_rust::coin::CoinPair::new(
-                chatex_sdk_rust::coin::Coin::TON,
-                chatex_sdk_rust::coin::Coin::USDT,
+                converter.to_coin(pair.sell),
+                converter.to_coin(pair.buy),
             );
             match exchange.get_all_orders(pair, None, Some(count)).await {
                 Ok(orders) => Ok(orders
