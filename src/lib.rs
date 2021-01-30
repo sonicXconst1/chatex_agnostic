@@ -3,6 +3,7 @@ pub mod sniffer;
 pub mod trader;
 pub mod merchant;
 
+#[derive(Clone, Copy, Debug)]
 pub struct CoinConverter {
 }
 
