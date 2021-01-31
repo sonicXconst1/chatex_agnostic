@@ -19,7 +19,7 @@ impl<TConnector> agnostic::merchant::Merchant for ChatexMerchant<TConnector>
 where
     TConnector: hyper::client::connect::Connect + Send + Sync + Clone + 'static,
 {
-    type Accountant = accountant::ChatexAccountant;
+    type Accountant = accountant::ChatexAccountant<TConnector>;
     type Trader = trader::ChatexTrader;
     type Sniffer = sniffer::ChatexSniffer<TConnector>;
 
