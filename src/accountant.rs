@@ -5,6 +5,19 @@ pub struct ChatexAccountant<TConnector> {
     client: std::sync::Arc<chatex_sdk_rust::ChatexClient<TConnector>>,
 }
 
+impl<TConnector> ChatexAccountant<TConnector> 
+where 
+    TConnector: hyper::client::connect::Connect + Sync + Send + Clone + 'static
+{
+    pub fn new(
+        client: std::sync::Arc<chatex_sdk_rust::ChatexClient<TConnector>>,
+    ) -> ChatexAccountant<TConnector> {
+        ChatexAccountant {
+            client
+        }
+    }
+}
+
 impl<TConnector> agnostic::market::Accountant for ChatexAccountant<TConnector>
 where
     TConnector: hyper::client::connect::Connect + Send + Sync + Clone + 'static,

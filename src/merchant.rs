@@ -24,7 +24,7 @@ where
     type Sniffer = sniffer::ChatexSniffer<TConnector>;
 
     fn accountant(&self) -> Self::Accountant {
-        todo!()
+        accountant::ChatexAccountant::new(self.client.clone())
     }
 
     fn trader(&self) -> Self::Trader {
