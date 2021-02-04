@@ -81,7 +81,7 @@ where
     fn get_my_orders(
         &self,
         coins: agnostic::coin::CoinPair,
-    ) -> agnostic::market::Future<Result<Vec<agnostic::order::Order>, String>> {
+    ) -> agnostic::market::Future<Result<Vec<agnostic::order::OrderWithId>, String>> {
         let exchange = self.client.exchange();
         let future = async move {
             let converter = crate::CoinConverter::default();
@@ -92,7 +92,8 @@ where
             );
             match exchange.get_my_orders(Some(pair), None, None, None).await {
                 Ok(orders) => Ok(orders.into_iter()
-                    .map(|order| agnostic::order::Order {
+                    .map(|order| agnostic::order::OrderWithId {
+                        id: format!("{}", order.id),
                         coins: coins.clone(),
                         amount: f64::from_str(&order.amount).unwrap(),
                         price: f64::from_str(&order.rate).unwrap(),
