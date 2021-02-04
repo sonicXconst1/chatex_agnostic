@@ -86,7 +86,11 @@ where
                     if currencies.len() == 2 {
                         let left = currencies.get(0).unwrap().clone();
                         let right = currencies.get(1).unwrap().clone();
-                        Ok((left, right))
+                        if converter.to_string(left.coin.clone()) == sell_coin_as_string {
+                            Ok((left, right))
+                        } else {
+                            Ok((right, left))
+                        }
                     } else {
                         Err("Invalid currencies. Found more then 2 currencies.".to_owned())
                     }
