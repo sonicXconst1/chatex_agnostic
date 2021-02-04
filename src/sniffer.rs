@@ -54,9 +54,11 @@ where
     ) -> agnostic::market::Future<Result<agnostic::order::Order, String>> {
         let exchange = self.client.exchange();
         let future = async move {
+            let converter = crate::CoinConverter::default();
+            let pair = coins.clone();
             let pair = chatex_sdk_rust::coin::CoinPair::new(
-                chatex_sdk_rust::coin::Coin::TON,
-                chatex_sdk_rust::coin::Coin::USDT,
+                converter.to_coin(pair.sell),
+                converter.to_coin(pair.buy),
             );
             match exchange.get_all_orders(pair, None, Some(1)).await {
                 Ok(orders) => {
@@ -71,6 +73,32 @@ where
                     })
                 }
                 Err(error) => Err(format!("{}", error)),
+            }
+        };
+        Box::pin(future)
+    }
+
+    fn get_my_orders(
+        &self,
+        coins: agnostic::coin::CoinPair,
+    ) -> agnostic::market::Future<Result<Vec<agnostic::order::Order>, String>> {
+        let exchange = self.client.exchange();
+        let future = async move {
+            let converter = crate::CoinConverter::default();
+            let pair = coins.clone();
+            let pair = chatex_sdk_rust::coin::CoinPair::new(
+                converter.to_coin(pair.sell),
+                converter.to_coin(pair.buy),
+            );
+            match exchange.get_my_orders(Some(pair), None, None, None).await {
+                Ok(orders) => Ok(orders.into_iter()
+                    .map(|order| agnostic::order::Order {
+                        coins: coins.clone(),
+                        amount: f64::from_str(&order.amount).unwrap(),
+                        price: f64::from_str(&order.rate).unwrap(),
+                    })
+                    .collect()),
+                Err(error) => Err(error.to_string())
             }
         };
         Box::pin(future)
