@@ -20,7 +20,7 @@ where
     TConnector: hyper::client::connect::Connect + Send + Sync + Clone + 'static,
 {
     type Accountant = accountant::ChatexAccountant<TConnector>;
-    type Trader = trader::ChatexTrader;
+    type Trader = trader::ChatexTrader<TConnector>;
     type Sniffer = sniffer::ChatexSniffer<TConnector>;
 
     fn accountant(&self) -> Self::Accountant {
@@ -28,7 +28,7 @@ where
     }
 
     fn trader(&self) -> Self::Trader {
-        todo!()
+        trader::ChatexTrader::new(std::sync::Arc::new(self.client.exchange()))
     }
 
     fn sniffer(&self) -> Self::Sniffer {
