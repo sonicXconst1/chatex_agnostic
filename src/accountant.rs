@@ -104,4 +104,8 @@ where
     fn calculate_volume(&self, _coins: agnostic::coin::CoinPair, price: f64, amount: f64) -> f64 {
         price * amount
     }
+
+    fn nearest_price(&self, _coins: agnostic::coin::CoinPair, price: f64) -> f64 {
+        price - 0.0001
+    }
 }
