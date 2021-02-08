@@ -47,3 +47,10 @@ impl trading_pair::TradingPairConverter for TradingPairConverter {
         }
     }
 }
+
+pub fn convert_price(side: Side, price: f64) -> f64 {
+    match side {
+        Side::Buy => price,
+        Side::Sell => 1.0 / price,
+    }
+}

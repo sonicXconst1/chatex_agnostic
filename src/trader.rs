@@ -1,4 +1,5 @@
 use agnostic::trading_pair::TradingPairConverter;
+use crate::convert_price;
 
 pub struct ChatexTrader<TConnector> {
     client: std::sync::Arc<chatex_sdk_rust::ExchangeClient<TConnector>>,
@@ -27,7 +28,8 @@ where
         let future = async move {
             let converter = crate::TradingPairConverter::default();
             let coins = converter.to_pair(order.trading_pair.clone());
-            match client.create_order(coins, order.amount, order.price).await {
+            let price = convert_price(order.trading_pair.side.clone(), order.price);
+            match client.create_order(coins, order.amount, price).await {
                 Ok(order) => {
                     log::debug!("Order created: {:#?}", order);
                     Ok(())
@@ -46,9 +48,10 @@ where
         let client = self.client.clone();
         let id = id.to_owned();
         let future = async move {
+            let price = convert_price(new_order.trading_pair.side.clone(), new_order.price);
             let new_order = chatex_sdk_rust::models::UpdateOrder {
                 amount: format!("{}", new_order.amount),
-                rate: format!("{}", new_order.price),
+                rate: format!("{}", price),
             };
             match client.update_order_by_id(&id, &new_order).await {
                 Ok(order) => {
