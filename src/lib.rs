@@ -3,41 +3,47 @@ pub mod sniffer;
 pub mod trader;
 pub mod merchant;
 
-use agnostic::coin::Coin;
+use chatex_sdk_rust::coin;
+use agnostic::trading_pair;
+use agnostic::trading_pair::Side;
+use agnostic::trading_pair::Coins;
+use agnostic::trading_pair::Coin;
+use agnostic::trading_pair::TradingPair;
 
 #[derive(Default, Clone, Copy, Debug)]
-pub struct CoinConverter {
+pub struct TradingPairConverter {
 }
 
-impl agnostic::coin::CoinConverter for CoinConverter {
-    type Coin = chatex_sdk_rust::coin::Coin;
+impl trading_pair::TradingPairConverter for TradingPairConverter {
+    type Pair = coin::CoinPair;
+    type Coin = coin::Coin;
 
-    fn to_string(&self, coin: agnostic::coin::Coin) -> String {
-        match coin {
-            Coin::TON => chatex_sdk_rust::coin::Coin::TON.to_string(),
-            Coin::USDT => chatex_sdk_rust::coin::Coin::USDT.to_string(),
-            Coin::BTC => chatex_sdk_rust::coin::Coin::BTC.to_string(),
-            Coin::Unknown(somthing) => somthing,
+    fn to_string(&self, trading_pair: TradingPair ) -> String {
+        self.to_pair(trading_pair).into()
+    }
+
+    fn to_pair(&self, trading_pair: TradingPair) -> Self::Pair {
+        let direct_pair = match trading_pair.coins {
+            Coins::TonUsdt => coin::CoinPair::new(coin::Coin::TON, coin::Coin::USDT),
+        };
+        match trading_pair.side {
+            Side::Buy => direct_pair.reversed(),
+            Side::Sell => direct_pair,
         }
     }
 
-    fn to_coin(&self, coin: agnostic::coin::Coin) -> Self::Coin {
+    fn from_agnostic_coin(&self, coin: Coin) -> Self::Coin {
         match coin {
-            Coin::TON => chatex_sdk_rust::coin::Coin::TON,
-            Coin::USDT => chatex_sdk_rust::coin::Coin::USDT,
-            Coin::BTC => chatex_sdk_rust::coin::Coin::BTC,
-            Coin::Unknown(something) => chatex_sdk_rust::coin::Coin::Unknown(something),
+            Coin::TON => Self::Coin::TON,
+            Coin::USDT => Self::Coin::USDT,
         }
     }
 
-    fn from_coin(&self, coin: Self::Coin) -> agnostic::coin::Coin {
-        use chatex_sdk_rust::coin::Coin;
+    fn to_agnostic_coin(&self, coin: Self::Coin) -> Option<Coin> {
         match coin {
-            Coin::TON => agnostic::coin::Coin::TON,
-            Coin::USDT => agnostic::coin::Coin::USDT,
-            Coin::BTC => agnostic::coin::Coin::BTC,
-            other => agnostic::coin::Coin::Unknown(String::from(other)),
+            Self::Coin::USDT => Some(Coin::USDT),
+            Self::Coin::TON => Some(Coin::TON),
+            _other => None,
         }
     }
 }
-
