@@ -1,4 +1,4 @@
-use crate::convert_price;
+use crate::{convert_price, convert_amount};
 use agnostic::trading_pair::TradingPair;
 use agnostic::trading_pair::TradingPairConverter;
 use std::str::FromStr;
@@ -34,11 +34,13 @@ where
                     .into_iter()
                     .map(|order| {
                         let price = f64::from_str(&order.rate).unwrap();
+                        let amount = f64::from_str(&order.amount).unwrap();
                         let price = convert_price(trading_pair.side.clone(), price);
+                        let amount = convert_amount(trading_pair.side.clone(), price, amount);
                         agnostic::order::Order {
                             trading_pair: trading_pair.clone(),
                             price,
-                            amount: f64::from_str(&order.amount).unwrap(),
+                            amount,
                         }
                     })
                     .collect()),
@@ -63,11 +65,13 @@ where
                         None => return Err("0 orders from chatex API".to_owned()),
                     };
                     let price = f64::from_str(&order.rate).unwrap();
+                    let amount = f64::from_str(&order.amount).unwrap();
                     let price = convert_price(trading_pair.side.clone(), price);
+                    let amount = convert_amount(trading_pair.side.clone(), price, amount);
                     Ok(agnostic::order::Order {
                         trading_pair,
                         price,
-                        amount: f64::from_str(&order.amount).unwrap(),
+                        amount,
                     })
                 }
                 Err(error) => Err(format!("{}", error)),
@@ -89,11 +93,13 @@ where
                     .into_iter()
                     .map(|order| {
                         let price = f64::from_str(&order.rate).unwrap();
+                        let amount = f64::from_str(&order.amount).unwrap();
                         let price = convert_price(trading_pair.side.clone(), price);
+                        let amount = convert_amount(trading_pair.side.clone(), price, amount);
                         agnostic::order::OrderWithId {
                             id: format!("{}", order.id),
                             trading_pair: trading_pair.clone(),
-                            amount: f64::from_str(&order.amount).unwrap(),
+                            amount,
                             price,
                         }
                     })

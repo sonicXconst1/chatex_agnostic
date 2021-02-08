@@ -54,3 +54,10 @@ pub fn convert_price(side: Side, price: f64) -> f64 {
         Side::Sell => 1.0 / price,
     }
 }
+
+pub fn convert_amount(side: Side, price: f64, amount: f64) -> f64 {
+    match side {
+        Side::Buy => 1.0 / price * amount,
+        Side::Sell => price * amount,
+    }
+}
