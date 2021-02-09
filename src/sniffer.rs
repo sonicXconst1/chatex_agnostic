@@ -34,8 +34,10 @@ where
                     .into_iter()
                     .map(|order| {
                         let price = f64::from_str(&order.rate).unwrap();
+                        log::debug!("Initial price: {}", price);
                         let amount = f64::from_str(&order.amount).unwrap();
                         let price = convert_price(trading_pair.side.clone(), price);
+                        log::debug!("Converted price: {}", price);
                         let amount = convert_amount(trading_pair.side.clone(), price, amount);
                         agnostic::order::Order {
                             trading_pair: trading_pair.clone(),
