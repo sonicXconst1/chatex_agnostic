@@ -29,6 +29,7 @@ where
         let future = async move {
             let converter = crate::TradingPairConverter::default();
             let pair = converter.to_pair(trading_pair.clone());
+            log::debug!("Pair: {:#?}", String::from(pair.clone()));
             match exchange.get_all_orders(pair, None, Some(count)).await {
                 Ok(orders) => Ok(orders
                     .into_iter()
