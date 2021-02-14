@@ -50,8 +50,8 @@ impl trading_pair::TradingPairConverter for TradingPairConverter {
 
 pub fn convert_price(side: Side, price: f64) -> f64 {
     match side {
-        Side::Sell => price,
-        Side::Buy => 1.0 / price,
+        Side::Sell => 1.0 / price,
+        Side::Buy => price,
     }
 }
 

@@ -82,14 +82,41 @@ where
         Box::pin(future)
     }
 
-    fn create_trade_by_id(&self, order_id: &str) -> agnostic::market::Future<Result<(), String>> {
-        todo!()
-    }
-
     fn create_trade_from_order(
         &self,
         order: agnostic::order::Order,
     ) -> agnostic::market::Future<Result<(), String>> {
-        todo!()
+        let client = self.client.clone();
+        let future = async move {
+            let converter = crate::TradingPairConverter::default();
+            let coins = converter.to_pair(order.trading_pair.clone());
+            let price = convert_price(order.trading_pair.side.clone(), order.price);
+            let amount = convert_amount(order.trading_pair.side.clone(), price, order.amount);
+            let orders = match client.get_all_orders(coins, None, Some(30)).await {
+                Ok(orders) => orders,
+                Err(error) => return Err(format!("{:#?}", error)),
+            };
+            if let Some(order) = orders.iter()
+                .find(|order| {
+                    let order_rate = f64::from_str(&order.rate).unwrap();
+                    let order_amount = f64::from_str(&order.amount).unwrap();
+                    order_rate == price && order_amount == amount
+                }) {
+                    let trade = chatex_sdk_rust::models::CreateTradeRequest {
+                        amount: amount.to_string(),
+                        rate: price.to_string(),
+                    };
+                    match client.create_trade_for_order(&order.id.to_string(), &trade).await {
+                        Ok(trade) => {
+                            log::debug!("Trade success: {:#?}", trade);
+                            Ok(())
+                        },
+                        Err(error) => Err(error.to_string()), 
+                    }
+            } else {
+                Err(format!("Failed to find the order: {:#?}", order))
+            }
+        };
+        Box::pin(future)
     }
 }
