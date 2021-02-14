@@ -1,4 +1,3 @@
-use crate::{convert_price, convert_amount};
 use agnostic::trading_pair::TradingPair;
 use agnostic::trading_pair::TradingPairConverter;
 use std::str::FromStr;
@@ -27,23 +26,20 @@ where
     ) -> agnostic::market::Future<Result<Vec<agnostic::order::Order>, String>> {
         let exchange = self.client.exchange();
         let future = async move {
-            let converter = crate::TradingPairConverter::default();
+            let converter = crate::converter::TradingPairConverter::default();
             let pair = converter.to_pair(trading_pair.clone());
             log::debug!("Pair: {:#?}", String::from(pair.clone()));
             match exchange.get_all_orders(pair, None, Some(count)).await {
                 Ok(orders) => Ok(orders
                     .into_iter()
                     .map(|order| {
-                        let price = f64::from_str(&order.rate).unwrap();
-                        log::debug!("Initial price: {}", price);
-                        let amount = f64::from_str(&order.amount).unwrap();
-                        let price = convert_price(trading_pair.side.clone(), price);
-                        log::debug!("Converted price: {}", price);
-                        let amount = convert_amount(trading_pair.side.clone(), price, amount);
+                        let order = crate::order::Order::from_raw(
+                            &trading_pair,
+                            &order);
                         agnostic::order::Order {
                             trading_pair: trading_pair.clone(),
-                            price,
-                            amount,
+                            price: order.rate,
+                            amount: order.amount,
                         }
                     })
                     .collect()),
@@ -59,7 +55,7 @@ where
     ) -> agnostic::market::Future<Result<agnostic::order::Order, String>> {
         let exchange = self.client.exchange();
         let future = async move {
-            let converter = crate::TradingPairConverter::default();
+            let converter = crate::converter::TradingPairConverter::default();
             let pair = converter.to_pair(trading_pair.clone());
             match exchange.get_all_orders(pair, None, Some(1)).await {
                 Ok(orders) => {
@@ -67,14 +63,13 @@ where
                         Some(order) => order,
                         None => return Err("0 orders from chatex API".to_owned()),
                     };
-                    let price = f64::from_str(&order.rate).unwrap();
-                    let amount = f64::from_str(&order.amount).unwrap();
-                    let price = convert_price(trading_pair.side.clone(), price);
-                    let amount = convert_amount(trading_pair.side.clone(), price, amount);
+                    let order = crate::order::Order::from_raw(
+                        &trading_pair,
+                        order);
                     Ok(agnostic::order::Order {
                         trading_pair,
-                        price,
-                        amount,
+                        price: order.rate,
+                        amount: order.amount,
                     })
                 }
                 Err(error) => Err(format!("{}", error)),
@@ -89,21 +84,20 @@ where
     ) -> agnostic::market::Future<Result<Vec<agnostic::order::OrderWithId>, String>> {
         let exchange = self.client.exchange();
         let future = async move {
-            let converter = crate::TradingPairConverter::default();
+            let converter = crate::converter::TradingPairConverter::default();
             let pair = converter.to_pair(trading_pair.clone());
             match exchange.get_my_orders(Some(pair), None, None, None).await {
                 Ok(orders) => Ok(orders
                     .into_iter()
                     .map(|order| {
-                        let price = f64::from_str(&order.rate).unwrap();
-                        let amount = f64::from_str(&order.amount).unwrap();
-                        let price = convert_price(trading_pair.side.clone(), price);
-                        let amount = convert_amount(trading_pair.side.clone(), price, amount);
+                        let order = crate::order::Order::from_raw(
+                            &trading_pair,
+                            &order);
                         agnostic::order::OrderWithId {
-                            id: format!("{}", order.id),
+                            id: format!("{}", order.id.unwrap()),
                             trading_pair: trading_pair.clone(),
-                            amount,
-                            price,
+                            amount: order.amount,
+                            price: order.rate,
                         }
                     })
                     .collect()),

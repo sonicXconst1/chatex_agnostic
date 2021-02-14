@@ -1,5 +1,4 @@
-use agnostic::trading_pair::TradingPairConverter;
-use crate::{convert_price, convert_amount};
+use crate::order::Order;
 use std::str::FromStr;
 
 pub struct ChatexTrader<TConnector> {
@@ -27,11 +26,15 @@ where
     ) -> agnostic::market::Future<Result<(), String>> {
         let client = self.client.clone();
         let future = async move {
-            let converter = crate::TradingPairConverter::default();
-            let coins = converter.to_pair(order.trading_pair.clone());
-            let price = convert_price(order.trading_pair.side.clone(), order.price);
-            let amount = convert_amount(order.trading_pair.side.clone(), price, order.amount);
-            match client.create_order(coins, amount, price).await {
+            let converted_order: Order = order.into();
+            match client
+                .create_order(
+                    converted_order.pair,
+                    converted_order.amount,
+                    converted_order.amount,
+                )
+                .await
+            {
                 Ok(order) => {
                     log::debug!("Order created: {:#?}", order);
                     Ok(())
@@ -50,11 +53,10 @@ where
         let client = self.client.clone();
         let id = id.to_owned();
         let future = async move {
-            let price = convert_price(new_order.trading_pair.side.clone(), new_order.price);
-            let amount = convert_amount(new_order.trading_pair.side.clone(), price, new_order.amount);
+            let converted_order: Order = new_order.into();
             let new_order = chatex_sdk_rust::models::UpdateOrder {
-                amount: format!("{}", amount),
-                rate: format!("{}", price),
+                amount: format!("{}", converted_order.rate),
+                rate: format!("{}", converted_order.amount),
             };
             match client.update_order_by_id(&id, &new_order).await {
                 Ok(order) => {
@@ -88,31 +90,35 @@ where
     ) -> agnostic::market::Future<Result<(), String>> {
         let client = self.client.clone();
         let future = async move {
-            let converter = crate::TradingPairConverter::default();
-            let coins = converter.to_pair(order.trading_pair.clone());
-            let price = convert_price(order.trading_pair.side.clone(), order.price);
-            let amount = convert_amount(order.trading_pair.side.clone(), price, order.amount);
-            let orders = match client.get_all_orders(coins, None, Some(30)).await {
+            let converted_order: Order = order.clone().into();
+            let orders = match client
+                .get_all_orders(converted_order.pair.clone(), None, Some(30))
+                .await
+            {
                 Ok(orders) => orders,
                 Err(error) => return Err(format!("{:#?}", error)),
             };
-            if let Some(order) = orders.iter()
-                .find(|order| {
-                    let order_rate = f64::from_str(&order.rate).unwrap();
-                    let order_amount = f64::from_str(&order.amount).unwrap();
-                    order_rate == price && order_amount == amount
-                }) {
-                    let trade = chatex_sdk_rust::models::CreateTradeRequest {
-                        amount: amount.to_string(),
-                        rate: price.to_string(),
-                    };
-                    match client.create_trade_for_order(&order.id.to_string(), &trade).await {
-                        Ok(trade) => {
-                            log::debug!("Trade success: {:#?}", trade);
-                            Ok(())
-                        },
-                        Err(error) => Err(error.to_string()), 
+            if let Some(order) = orders.iter().find(|order| {
+                let order_rate = f64::from_str(&order.rate).unwrap();
+                let order_amount = f64::from_str(&order.amount).unwrap();
+                let rate = converted_order.rate;
+                let amount = converted_order.amount;
+                order_rate == rate && order_amount == amount
+            }) {
+                let trade = chatex_sdk_rust::models::CreateTradeRequest {
+                    amount: converted_order.amount.to_string(),
+                    rate: converted_order.rate.to_string(),
+                };
+                match client
+                    .create_trade_for_order(&order.id.to_string(), &trade)
+                    .await
+                {
+                    Ok(trade) => {
+                        log::debug!("Trade success: {:#?}", trade);
+                        Ok(())
                     }
+                    Err(error) => Err(error.to_string()),
+                }
             } else {
                 Err(format!("Failed to find the order: {:#?}", order))
             }

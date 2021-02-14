@@ -31,7 +31,7 @@ where
         coin: Coin,
     ) -> agnostic::market::Future<Result<agnostic::currency::Currency, String>> {
         let profile = self.client.profile();
-        let converter = crate::TradingPairConverter::default();
+        let converter = crate::converter::TradingPairConverter::default();
         let coin_as_string = String::from(converter.from_agnostic_coin(coin.clone()));
         let future = async move {
             match profile.get_balance_summary().await {
@@ -65,7 +65,7 @@ where
         Result<(agnostic::currency::Currency, agnostic::currency::Currency), String>,
     > {
         let profile = self.client.profile();
-        let converter = crate::TradingPairConverter::default();
+        let converter = crate::converter::TradingPairConverter::default();
         let future = async move {
             let left_coin_as_string = String::from(converter.from_agnostic_coin(left.clone()));
             let right_coin_as_string = String::from(converter.from_agnostic_coin(right));
