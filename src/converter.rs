@@ -1,6 +1,7 @@
 use chatex_sdk_rust::coin;
 use agnostic::trading_pair;
 use agnostic::trading_pair::Side;
+use agnostic::trading_pair::Target;
 use agnostic::trading_pair::Coins;
 use agnostic::trading_pair::Coin;
 use agnostic::trading_pair::TradingPair;
@@ -21,9 +22,11 @@ impl trading_pair::TradingPairConverter for TradingPairConverter {
         let direct_pair = match trading_pair.coins {
             Coins::TonUsdt => coin::CoinPair::new(coin::Coin::TON, coin::Coin::USDT),
         };
-        match trading_pair.side {
-            Side::Buy => direct_pair.reversed(),
-            Side::Sell => direct_pair,
+        match (trading_pair.target, trading_pair.side) {
+            (Target::Market, Side::Buy) => direct_pair,
+            (Target::Market, Side::Sell) => direct_pair.reversed(),
+            (Target::Limit, Side::Buy) => direct_pair.reversed(),
+            (Target::Limit, Side::Sell) => direct_pair,
         }
     }
 
