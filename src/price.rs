@@ -23,15 +23,15 @@ impl Price {
 }
 
 pub fn convert_price(target: Target, side: Side, price: &Price) -> f64 {
-    match side {
-        Side::Sell => price.direct(),
-        Side::Buy => price.reversed(),
+    match (target, side) {
+        (Target::Market, Side::Buy) => price.direct(),
+        (Target::Market, Side::Sell) => price.reversed(),
+        (Target::Limit, Side::Buy) => price.reversed(),
+        (Target::Limit, Side::Sell) => price.direct(),
     }
 }
 
 pub fn convert_amount(target: Target, side: Side, price: &Price, amount: f64) -> f64 {
-    match side {
-        Side::Sell => price.direct() * amount,
-        Side::Buy => price.reversed() * amount,
-    }
+    let price = convert_price(target, side, &price);
+    price * amount
 }
