@@ -34,8 +34,8 @@ pub fn convert_price(target: Target, side: Side, price: &Price) -> f64 {
 pub fn convert_amount(target: Target, side: Side, price: &Price, amount: f64) -> f64 {
     match (target, side) {
         (Target::Market, Side::Buy) => amount,
-        (Target::Market, Side::Sell) => price * amount,
-        (Target::Limit, Side::Buy) => price * amount,
+        (Target::Market, Side::Sell) => price.direct() * amount,
+        (Target::Limit, Side::Buy) => price.direct() * amount,
         (Target::Limit, Side::Sell) => amount,
     }
 }
