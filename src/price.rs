@@ -33,5 +33,5 @@ pub fn convert_price(target: Target, side: Side, price: &Price) -> f64 {
 
 pub fn convert_amount(target: Target, side: Side, price: &Price, amount: f64) -> f64 {
     let price = convert_price(target, side, &price);
-    price * amount
+    (1.0 / price) * amount
 }
