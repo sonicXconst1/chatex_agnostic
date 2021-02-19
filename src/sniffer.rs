@@ -1,6 +1,5 @@
 use agnostic::trading_pair::TradingPair;
 use agnostic::trading_pair::TradingPairConverter;
-use std::str::FromStr;
 
 pub struct ChatexSniffer<TConnector> {
     client: std::sync::Arc<chatex_sdk_rust::ChatexClient<TConnector>>,
@@ -105,5 +104,60 @@ where
             }
         };
         Box::pin(future)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::test;
+    use crate::test::TestCase;
+    use crate::converter;
+    use agnostic::trading_pair::TradingPairConverter;
+    use agnostic::market::Sniffer;
+
+    fn create_sniffer(
+        client: std::sync::Arc<chatex_sdk_rust::ChatexClient<test::Connector>>,
+    ) -> super::ChatexSniffer<test::Connector> {
+        super::ChatexSniffer::new(client)
+    }
+
+    #[test]
+    fn test() {
+        let test_case = TestCase::default();
+        let trading_pair = agnostic::trading_pair::TradingPair {
+            coins: agnostic::trading_pair::Coins::TonUsdt,
+            side: agnostic::trading_pair::Side::Buy,
+            target: agnostic::trading_pair::Target::Market,
+        };
+        let input_price = 2.0;
+        let input_amount = 2.0;
+        let converter = converter::TradingPairConverter::default();
+        let mock = test_case.server.mock(|when, then| {
+            when.method(httpmock::Method::GET);
+            let body: Vec<chatex_sdk_rust::models::Order> = vec![
+                chatex_sdk_rust::models::typed::Order::new(
+                    converter.to_pair(trading_pair.clone()),
+                    input_price,
+                    input_amount,
+                ).into(),
+            ];
+            let body = serde_json::to_string(&body).expect(test::SERDE_ERROR);
+            then.status(201)
+                .header("Content-Type", "application/json")
+                .body(body);
+        });
+        let sniffer = create_sniffer(test_case.client);
+        let orders = tokio_test::block_on(sniffer.all_the_best_orders(trading_pair, 10));
+        assert!(
+            orders.is_ok(),
+            format!("Failed to get orders from server: {:#?}", orders.err()));
+        let orders = orders.unwrap();
+        assert_eq!(orders.len(), 1);
+        let first_order = orders.get(0);
+        assert!(first_order.is_some(), "Failed to get the first order");
+        let first_order = first_order.unwrap();
+        assert_eq!(first_order.price, 2.0, "Invlaid price");
+        assert_eq!(first_order.amount, 2.0, "Invalid amount");
+        mock.assert()
     }
 }

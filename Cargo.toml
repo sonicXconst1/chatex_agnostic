@@ -11,3 +11,8 @@ chatex-sdk-rust = { git="https://github.com/sonicxconst1/sdk-rust.git", branch="
 agnostic = { git="https://github.com/sonicxconst1/agnostic.git", branch="master" }
 hyper = { version = "0.*", features = ["client"] }
 log = { version = "0.*" }
+
+[dev-dependencies]
+tokio-test = { version = "*" }
+httpmock = { version = "0.*" }
+serde_json = { version = "*" }

@@ -5,3 +5,5 @@ pub mod merchant;
 pub mod price;
 pub mod order;
 pub mod converter;
+#[cfg(test)]
+pub(crate) mod test;
