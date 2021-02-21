@@ -21,3 +21,19 @@ impl Default for TestCase {
         }
     }
 }
+
+impl TestCase {
+    pub fn mock_access_token(&self) -> httpmock::MockRef {
+        self.server.mock(|when, then| {
+            when.method(httpmock::Method::POST)
+                .header("Authorization", "Bearer SECRET")
+                .header("Accept", "application/json")
+                .path("/auth/access-token");
+            let access_token = serde_json::to_string(
+                &chatex_sdk_rust::models::AccessToken::default()).expect(SERDE_ERROR);
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(access_token);
+        })
+    }
+}

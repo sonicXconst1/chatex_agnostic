@@ -122,8 +122,7 @@ mod test {
     }
 
     #[test]
-    fn test() {
-        let test_case = TestCase::default();
+    fn all_the_best_orders() {
         let trading_pair = agnostic::trading_pair::TradingPair {
             coins: agnostic::trading_pair::Coins::TonUsdt,
             side: agnostic::trading_pair::Side::Buy,
@@ -131,7 +130,39 @@ mod test {
         };
         let input_price = 2.0;
         let input_amount = 2.0;
+        test_trading_pair(trading_pair, input_price, 2.0, input_amount, 2.0);
+        let trading_pair = agnostic::trading_pair::TradingPair {
+            coins: agnostic::trading_pair::Coins::TonUsdt,
+            side: agnostic::trading_pair::Side::Sell,
+            target: agnostic::trading_pair::Target::Market,
+        };
+        test_trading_pair(trading_pair, input_price, 0.5, input_amount, 4.0);
+        let trading_pair = agnostic::trading_pair::TradingPair {
+            coins: agnostic::trading_pair::Coins::TonUsdt,
+            side: agnostic::trading_pair::Side::Buy,
+            target: agnostic::trading_pair::Target::Limit,
+        };
+        test_trading_pair(trading_pair, input_price, 0.5, input_amount, 4.0);
+        let trading_pair = agnostic::trading_pair::TradingPair {
+            coins: agnostic::trading_pair::Coins::TonUsdt,
+            side: agnostic::trading_pair::Side::Sell,
+            target: agnostic::trading_pair::Target::Limit,
+        };
+        test_trading_pair(trading_pair, input_price, 2.0, input_amount, 2.0);
+    }
+
+    #[test]
+    fn get_my_orders() {
+        let trading_pair = agnostic::trading_pair::TradingPair {
+            coins: agnostic::trading_pair::Coins::TonUsdt,
+            side: agnostic::trading_pair::Side::Buy,
+            target: agnostic::trading_pair::Target::Market,
+        };
+        let input_price = 2.0;
+        let input_amount = 2.0;
+        let test_case = TestCase::default();
         let converter = converter::TradingPairConverter::default();
+        let auth_mock = test_case.mock_access_token();
         let mock = test_case.server.mock(|when, then| {
             when.method(httpmock::Method::GET);
             let body: Vec<chatex_sdk_rust::models::Order> = vec![
@@ -142,11 +173,48 @@ mod test {
                 ).into(),
             ];
             let body = serde_json::to_string(&body).expect(test::SERDE_ERROR);
-            then.status(201)
+            then.status(200)
                 .header("Content-Type", "application/json")
                 .body(body);
         });
-        let sniffer = create_sniffer(test_case.client);
+        let sniffer = create_sniffer(test_case.client.clone());
+        let my_orders = sniffer.get_my_orders(trading_pair);
+        let my_orders = tokio_test::block_on(my_orders);
+        assert!(
+            my_orders.is_ok(),
+            format!("Failed to get my orders: {:#?}", my_orders.err())
+        );
+        let my_orders = my_orders.unwrap();
+        assert_eq!(my_orders.len(), 1, "Invalid amount of orders");
+        auth_mock.assert();
+        mock.assert();
+    }
+
+    fn test_trading_pair(
+        trading_pair: agnostic::trading_pair::TradingPair,
+        input_price: f64,
+        expected_price: f64,
+        input_amount: f64,
+        expected_amount: f64,
+    ) {
+        let test_case = TestCase::default();
+        let converter = converter::TradingPairConverter::default();
+        let auth_mock = test_case.mock_access_token();
+        let mock = test_case.server.mock(|when, then| {
+            when.method(httpmock::Method::GET);
+            let body: Vec<chatex_sdk_rust::models::Order> = vec![
+                chatex_sdk_rust::models::typed::Order::new(
+                    converter.to_pair(trading_pair.clone()),
+                    input_price,
+                    input_amount,
+                ).into(),
+            ];
+            let body = serde_json::to_string(&body).expect(test::SERDE_ERROR);
+            then.status(200)
+                .header("Content-Type", "application/json")
+                .body(body);
+        });
+        let sniffer = create_sniffer(test_case.client.clone());
         let orders = tokio_test::block_on(sniffer.all_the_best_orders(trading_pair, 10));
         assert!(
             orders.is_ok(),
@@ -156,8 +224,9 @@ mod test {
         let first_order = orders.get(0);
         assert!(first_order.is_some(), "Failed to get the first order");
         let first_order = first_order.unwrap();
-        assert_eq!(first_order.price, 2.0, "Invlaid price");
-        assert_eq!(first_order.amount, 2.0, "Invalid amount");
-        mock.assert()
+        assert_eq!(first_order.price, expected_price, "Invlaid price");
+        assert_eq!(first_order.amount, expected_amount, "Invalid amount");
+        mock.assert();
+        auth_mock.assert();
     }
 }
