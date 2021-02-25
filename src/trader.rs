@@ -126,3 +126,79 @@ where
         Box::pin(future)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::test::TestCase;
+    use crate::test::SERDE_ERROR;
+    use crate::test::Connector;
+    use agnostic::trading_pair::{TradingPair, Coins, Target, Side};
+    use agnostic::market::Trader;
+    use super::*;
+
+    fn create_trader(
+        client: std::sync::Arc<chatex_sdk_rust::ChatexClient<Connector>>
+    ) -> std::sync::Arc<ChatexTrader<Connector>> {
+        std::sync::Arc::new(ChatexTrader::new(std::sync::Arc::new(client.exchange())))
+    }
+
+    #[test]
+    fn create_trade_from_order() {
+        let test_case = TestCase::default();
+        let auth_mock = test_case.mock_access_token();
+        let orders_mock = test_case.server.mock(|when, then| {
+            when.method(httpmock::Method::GET);
+            let order = chatex_sdk_rust::models::typed::Order::new(
+                chatex_sdk_rust::coin::CoinPair::new(
+                    chatex_sdk_rust::coin::Coin::USDT,
+                    chatex_sdk_rust::coin::Coin::TON),
+                0.5,
+                4.0);
+            let body: chatex_sdk_rust::models::Order = order.clone().into();
+            let body = vec![body];
+            let body = serde_json::to_string(&body).expect(SERDE_ERROR);
+            then
+                .status(200)
+                .header("Content-Type", "application/json")
+                .body(body);
+        });
+        let trade_mock = test_case.server.mock(|when, then| {
+            let order = chatex_sdk_rust::models::typed::Order::new(
+                chatex_sdk_rust::coin::CoinPair::new(
+                    chatex_sdk_rust::coin::Coin::TON,
+                    chatex_sdk_rust::coin::Coin::USDT),
+                0.5,
+                4.0);
+            let trade = chatex_sdk_rust::models::CreateTradeRequest {
+                amount: format!("{}", order.amount),
+                rate: format!("{}", order.rate),
+            };
+            let body = serde_json::to_string(&trade).expect(SERDE_ERROR);
+            when
+                .body(body);
+            let trade: chatex_sdk_rust::models::Trade = order.into();
+            let trade = serde_json::to_string(&trade).expect(SERDE_ERROR);
+            then.status(201)
+                .header("Content-Type", "application/json")
+                .body(trade);
+        });
+        let trader = create_trader(test_case.client.clone());
+        let order = agnostic::order::Order {
+            trading_pair: TradingPair {
+                coins: Coins::TonUsdt,
+                target: Target::Market,
+                side: Side::Sell,
+            },
+            amount: 2.0,
+            price: 2.0,
+        };
+        let trade_result = trader.create_trade_from_order(order);
+        let trade_result = tokio_test::block_on(trade_result);
+        assert!(
+            trade_result.is_ok(),
+            format!("Failed to create the trade: {:#?}", trade_result.err()));
+        auth_mock.assert_hits(2);
+        orders_mock.assert();
+        trade_mock.assert()
+    }
+}
