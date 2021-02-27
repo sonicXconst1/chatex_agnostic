@@ -20,11 +20,11 @@ impl Order {
         let converter = converter::TradingPairConverter::default();
         let pair = converter.to_pair(trading_pair.clone());
         let order_price = price.into();
-        let price = crate::price::convert_price(
+        let price = agnostic::price::convert_to_base_coin_price(
             trading_pair.target.clone(),
             trading_pair.side.clone(),
             &order_price);
-        let amount = crate::price::convert_amount(
+        let amount = agnostic::price::convert_to_base_coin_amount(
             trading_pair.target.clone(),
             trading_pair.side.clone(),
             &order_price,
@@ -43,11 +43,11 @@ impl From<agnostic::order::Order> for Order {
         let converter = converter::TradingPairConverter::default();
         let pair = converter.to_pair(order.trading_pair.clone());
         let order_price = order.price.into();
-        let price = crate::price::convert_price(
+        let price = agnostic::price::convert_to_base_coin_price(
             order.trading_pair.target.clone(),
             order.trading_pair.side.clone(),
             &order_price);
-        let amount = crate::price::convert_amount(
+        let amount = agnostic::price::convert_to_base_coin_amount(
             order.trading_pair.target.clone(),
             order.trading_pair.side.clone(),
             &order_price,
