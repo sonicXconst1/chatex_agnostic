@@ -112,7 +112,7 @@ where
                     amount: converted_order.amount.to_string(),
                     rate: converted_order.rate.to_string(),
                 };
-                log::info!("Create trade request: {:#?}", trade);
+                log::info!("Create trade request: Id: {} Trade: {:#?}", order.id, trade);
                 match client
                     .create_trade_for_order(&order.id.to_string(), &trade)
                     .await
