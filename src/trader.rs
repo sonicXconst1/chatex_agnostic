@@ -27,6 +27,11 @@ where
         let client = self.client.clone();
         let future = async move {
             let converted_order: Order = order.into();
+            log::info!(
+                "Creating order: {} Price: {} Amount: {}",
+                String::from(converted_order.pair.clone()),
+                converted_order.rate,
+                converted_order.amount);
             match client
                 .create_order(
                     converted_order.pair,
