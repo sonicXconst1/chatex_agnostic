@@ -100,10 +100,8 @@ where
             };
             if let Some(order) = orders.iter().find(|order| {
                 let order_rate = f64::from_str(&order.rate).unwrap();
-                let order_amount = f64::from_str(&order.amount).unwrap();
                 let rate = converted_order.rate;
-                let amount = converted_order.amount;
-                order_rate == rate && order_amount == amount
+                order_rate == rate
             }) {
                 let trade = chatex_sdk_rust::models::CreateTradeRequest {
                     amount: converted_order.amount.to_string(),
