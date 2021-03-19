@@ -47,35 +47,6 @@ where
         Box::pin(future)
     }
 
-    fn the_best_order(
-        &self,
-        trading_pair: TradingPair,
-    ) -> agnostic::market::Future<Result<agnostic::order::Order, String>> {
-        let exchange = self.client.exchange();
-        let future = async move {
-            let converter = crate::converter::TradingPairConverter::default();
-            let pair = converter.to_pair(trading_pair.clone());
-            match exchange.get_all_orders(pair, None, Some(1)).await {
-                Ok(orders) => {
-                    let order = match orders.get(0) {
-                        Some(order) => order,
-                        None => return Err("0 orders from chatex API".to_owned()),
-                    };
-                    let order = crate::order::Order::from_raw(
-                        &trading_pair,
-                        order);
-                    Ok(agnostic::order::Order {
-                        trading_pair,
-                        price: order.rate,
-                        amount: order.amount,
-                    })
-                }
-                Err(error) => Err(format!("{}", error)),
-            }
-        };
-        Box::pin(future)
-    }
-
     fn get_my_orders(
         &self,
         trading_pair: TradingPair,
