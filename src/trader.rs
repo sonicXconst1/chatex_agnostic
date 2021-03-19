@@ -137,6 +137,7 @@ mod test {
     use crate::test::TestCase;
     use crate::test::SERDE_ERROR;
     use crate::test::Connector;
+    use agnostic::market::Trader;
     use agnostic::trading_pair::{TradingPair, Coins, Target, Side};
     use super::*;
 
@@ -196,7 +197,7 @@ mod test {
             amount: 2.0,
             price: 2.0,
         };
-        let trade_result = trader.create_trade_from_order(order);
+        let trade_result = trader.create_order(order);
         let trade_result = tokio_test::block_on(trade_result);
         assert!(
             trade_result.is_ok(),
