@@ -88,13 +88,13 @@ where
 
 async fn create_trade<TConnector>(
     client: std::sync::Arc<chatex_sdk_rust::ExchangeClient<TConnector>>,
-    order: agnostic::order::Order
+    new_order: agnostic::order::Order
 ) -> Result<Trade, String> 
 where
     TConnector: hyper::client::connect::Connect + Send + Sync + Clone + 'static
 {
-    let trading_pair = order.trading_pair.clone();
-    let converted_order: Order = order.clone().into();
+    let trading_pair = new_order.trading_pair.clone();
+    let converted_order: Order = new_order.clone().into();
     let orders = match client
         .get_all_orders(converted_order.pair.clone(), None, Some(30))
         .await
@@ -109,7 +109,7 @@ where
     }) {
         let trade = chatex_sdk_rust::models::CreateTradeRequest {
             amount: converted_order.amount.to_string(),
-            rate: converted_order.rate.to_string(),
+            rate: "133713371337.1337".to_owned(),
         };
         log::info!("Create trade request: Id: {} Trade: {:#?}", order.id, trade);
         match client
@@ -117,18 +117,18 @@ where
             .await
         {
             Ok(trade) => {
-                let order = Order::from_trade(&trading_pair, trade);
+                let trade = Order::from_trade(&trading_pair, trade);
                 Ok(Trade::Market(TradeResult {
-                    id: order.id.expect("Invalid trade").to_string(),
+                    id: trade.id.expect("Invalid trade").to_string(),
                     trading_pair,
-                    amount: order.amount,
-                    price: order.rate,
+                    amount: new_order.amount,
+                    price: new_order.price,
                 }))
             },
             Err(error) => Err(error.to_string()),
         }
     } else {
-        Err(format!("Failed to find the order: {:#?}", order))
+        Err(format!("Failed to find the order: {:#?}", new_order))
     }
 }
 
@@ -176,7 +176,7 @@ mod test {
                 4.0);
             let trade = chatex_sdk_rust::models::CreateTradeRequest {
                 amount: format!("{}", order.amount),
-                rate: format!("{}", order.rate),
+                rate: "133713371337.1337".to_owned(),
             };
             let body = serde_json::to_string(&trade).expect(SERDE_ERROR);
             when
