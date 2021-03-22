@@ -122,7 +122,7 @@ where
                     id: trade.id.expect("Invalid trade").to_string(),
                     trading_pair,
                     amount: new_order.amount,
-                    price: new_order.price,
+                    price: trade.rate,
                 }))
             },
             Err(error) => Err(error.to_string()),
