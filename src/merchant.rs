@@ -31,6 +31,10 @@ impl<TConnector> agnostic::merchant::Merchant for ChatexMerchant<TConnector>
 where
     TConnector: hyper::client::connect::Connect + Send + Sync + Clone + 'static,
 {
+    fn id(&self) -> &'static str {
+        "Chatex"
+    }
+
     fn accountant(&self) -> std::sync::Arc<dyn agnostic::market::Accountant> {
         self.accountant.clone()
     }
