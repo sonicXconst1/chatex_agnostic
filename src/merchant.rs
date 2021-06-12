@@ -31,7 +31,7 @@ impl<TConnector> agnostic::merchant::Merchant for ChatexMerchant<TConnector>
 where
     TConnector: hyper::client::connect::Connect + Send + Sync + Clone + 'static,
 {
-    fn id(&self) -> &'static str {
+    fn id() -> &'static str {
         "Chatex"
     }
 
