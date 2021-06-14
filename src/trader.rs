@@ -67,7 +67,7 @@ where
         .create_order(
             converted_order.pair,
             converted_order.amount,
-            converted_order.amount,
+            converted_order.rate,
         )
         .await
     {
